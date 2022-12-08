@@ -53,7 +53,7 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         List<String> authorityList = userDetails.getAuthorities().stream().map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList());
 
-        String accessToken = JWT.create().withExpiresAt(new Date(System.currentTimeMillis() + (1 * 60 * 1000)))
+        String accessToken = JWT.create().withExpiresAt(new Date(System.currentTimeMillis() + (60 * 60 * 1000)))
                 .withSubject(userDetails.getUsername())
                 .withClaim("authorities", authorityList)
                 .withIssuer(request.getRequestURI())

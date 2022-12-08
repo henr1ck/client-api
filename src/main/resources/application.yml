@@ -1,6 +1,6 @@
 jwt:
   algorithm:
-    secret: bread
+    secret: qZWvWjH21KlWC04P6RVfkC2MNC86guOhtQ8nySRC
 
 spring:
   datasource:

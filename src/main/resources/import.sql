@@ -1,5 +1,5 @@
-insert into role (name) values ("USER")
-insert into role (name) values ("ADMIN")
+insert into role (name) values ("ROLE_USER")
+insert into role (name) values ("ROLE_ADMIN")
 
 insert into user (username, password) values ('pedro' ,'$2a$12$5Ctx9MycUY4Z7IJjAVw5j.lMwPogj2hbigz0MXyxX5N708B7K3zei')
 insert into user_role (user_id, role_id) values (1, 1)

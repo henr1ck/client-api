@@ -1,6 +1,7 @@
 package br.edu.ifpi.client.security.config;
 
 import br.edu.ifpi.client.security.filter.JwtAuthenticationFilter;
+import br.edu.ifpi.client.security.filter.JwtAuthorizationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,6 +15,7 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
     private final AuthenticationManager authenticationManager;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtAuthorizationFilter jwtAuthorizationFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity security) throws Exception {
@@ -21,8 +23,11 @@ public class SecurityConfig {
                 .csrf().disable()
                 .authenticationManager(authenticationManager)
                 .addFilter(jwtAuthenticationFilter)
-                .authorizeHttpRequests()
-                .anyRequest().authenticated();
+                .addFilterBefore(jwtAuthorizationFilter, JwtAuthenticationFilter.class)
+                .authorizeHttpRequests(authorize -> {
+                    authorize.antMatchers("/api/**").hasRole("USER");
+                    authorize.anyRequest().denyAll();
+                });
 
         return security.build();
     }
