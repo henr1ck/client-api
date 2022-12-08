@@ -1,3 +1,7 @@
+jwt:
+  algorithm:
+    secret: bread
+
 spring:
   datasource:
     url: jdbc:mysql://localhost:3306/client?createDatabaseIfNotExists=true
@@ -8,10 +12,6 @@ spring:
     database: mysql
     hibernate:
       ddl-auto: create-drop
-
-  sql:
-    init:
-      mode: always
 
 logging:
   level:

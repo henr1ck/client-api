@@ -30,6 +30,12 @@ public class ClientController {
         return ResponseEntity.ok(clientList);
     }
 
+    @GetMapping(path = "/{id}")
+    public ResponseEntity<Client> findById(@PathVariable Long id){
+        Client clientFound = clientService.findById(id);
+        return ResponseEntity.ok(clientFound);
+    }
+
     @PostMapping
     public ResponseEntity<Client> save(@RequestBody Client client){
         Client clientSaved = clientService.save(client);
