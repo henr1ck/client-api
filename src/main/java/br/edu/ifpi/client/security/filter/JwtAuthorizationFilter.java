@@ -30,7 +30,8 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-        return request.getRequestURI().equals("/signin");
+        final String uri = request.getRequestURI();
+        return uri.equals("/signin") || uri.equals("/refresh-token");
     }
 
     @Override
