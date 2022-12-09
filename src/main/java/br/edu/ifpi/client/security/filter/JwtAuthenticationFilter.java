@@ -60,7 +60,7 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
                 .withIssuedAt(Instant.now())
                 .sign(Algorithm.HMAC256(JWT_ALGORITHM_SECRET));
 
-        String refreshToken = JWT.create().withExpiresAt(new Date(System.currentTimeMillis() + (5 * 60 * 1000)))
+        String refreshToken = JWT.create().withExpiresAt(new Date(System.currentTimeMillis() + (24 * 60 * 60 * 1000)))
                 .withSubject(userDetails.getUsername())
                 .withIssuer(request.getRequestURI())
                 .withIssuedAt(Instant.now())
