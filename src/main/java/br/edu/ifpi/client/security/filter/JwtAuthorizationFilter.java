@@ -1,9 +1,12 @@
 package br.edu.ifpi.client.security.filter;
 
+import br.edu.ifpi.client.exception.InvalidHeaderException;
+import br.edu.ifpi.client.exception.details.BadRequestExceptionDetails;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,6 +21,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Log4j2
@@ -28,6 +32,8 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
     @Value("${jwt.algorithm.secret}")
     private String JWT_ALGORITHM_SECRET;
 
+    private final ObjectMapper objectMapper;
+
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         final String uri = request.getRequestURI();
@@ -36,20 +42,37 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        String accessToken = request.getHeader("Access-Token");
+            String accessToken = request.getHeader("Access-Token");
+            try {
+                if(accessToken == null){
+                    throw new InvalidHeaderException("Access-Token header not found!");
+                }
+                JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(JWT_ALGORITHM_SECRET))
+                        .withClaim("Access token only", true).build();
 
-        JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(JWT_ALGORITHM_SECRET))
-                .withClaimPresence("authorities").build();
-        DecodedJWT decodedJWT = jwtVerifier.verify(accessToken);
+                DecodedJWT decodedJWT = jwtVerifier.verify(accessToken);
+                String subject = decodedJWT.getSubject();
+                List<SimpleGrantedAuthority> simpleGrantedAuthorities = decodedJWT.getClaim("authorities").asList(SimpleGrantedAuthority.class);
 
-        String subject = decodedJWT.getSubject();
-        List<SimpleGrantedAuthority> simpleGrantedAuthorities = decodedJWT.getClaim("authorities").asList(SimpleGrantedAuthority.class);
+                UsernamePasswordAuthenticationToken authenticationToken =
+                        new UsernamePasswordAuthenticationToken(subject, null, simpleGrantedAuthorities);
 
-        UsernamePasswordAuthenticationToken authenticationToken =
-                new UsernamePasswordAuthenticationToken(subject, null, simpleGrantedAuthorities);
+                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+                filterChain.doFilter(request, response);
 
-        SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-        filterChain.doFilter(request, response);
+            }catch (RuntimeException exception){
+                BadRequestExceptionDetails badRequestExceptionDetails = BadRequestExceptionDetails.builder()
+                        .exception(exception.getClass().getSimpleName())
+                        .message(exception.getLocalizedMessage())
+                        .timestamp(LocalDateTime.now())
+                        .statusCode(400)
+                        .build();
+
+                String exceptionDetailsAsJson = objectMapper.writeValueAsString(badRequestExceptionDetails);
+
+                response.setStatus(badRequestExceptionDetails.getStatusCode());
+                response.getWriter().print(exceptionDetailsAsJson);
+            }
     }
 
 }

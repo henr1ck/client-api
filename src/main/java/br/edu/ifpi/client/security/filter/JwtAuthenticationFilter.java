@@ -1,7 +1,12 @@
 package br.edu.ifpi.client.security.filter;
 
+import br.edu.ifpi.client.exception.InvalidHeaderException;
+import br.edu.ifpi.client.exception.details.AuthenticationExceptionDetails;
+import br.edu.ifpi.client.exception.details.BadRequestExceptionDetails;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -19,6 +24,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,16 +36,37 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
     @Value("${jwt.algorithm.secret}")
     private String JWT_ALGORITHM_SECRET;
 
-    public JwtAuthenticationFilter(AuthenticationManager authenticationManager) {
+    private ObjectMapper objectMapper;
+
+    public JwtAuthenticationFilter(AuthenticationManager authenticationManager, ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
         setAuthenticationManager(authenticationManager);
         setFilterProcessesUrl("/signin");
     }
 
     @Override
+    @SneakyThrows
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
         String username = request.getHeader("username");
         String password = request.getHeader("password");
+        try {
+            if (username == null || password == null){
+                throw new InvalidHeaderException("Username header or Password header is invalid");
+            }
+        } catch (RuntimeException exception) {
+            BadRequestExceptionDetails badRequestExceptionDetails  = BadRequestExceptionDetails.builder()
+                    .exception(exception.getClass().getSimpleName())
+                    .message(exception.getLocalizedMessage())
+                    .timestamp(LocalDateTime.now())
+                    .statusCode(400)
+                    .build();
 
+            String exceptionDetailsAsJson = objectMapper.writeValueAsString(badRequestExceptionDetails);
+            response.setStatus(badRequestExceptionDetails.getStatusCode());
+            response.getWriter().print(exceptionDetailsAsJson);
+
+            return null;
+        }
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(username, password);
         AuthenticationManager authenticationManager = getAuthenticationManager();
 
@@ -56,17 +83,34 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         String accessToken = JWT.create().withExpiresAt(new Date(System.currentTimeMillis() + (60 * 60 * 1000)))
                 .withSubject(userDetails.getUsername())
                 .withClaim("authorities", authorityList)
+                .withClaim("Access token only", true)
                 .withIssuer(request.getRequestURI())
                 .withIssuedAt(Instant.now())
                 .sign(Algorithm.HMAC256(JWT_ALGORITHM_SECRET));
 
         String refreshToken = JWT.create().withExpiresAt(new Date(System.currentTimeMillis() + (24 * 60 * 60 * 1000)))
                 .withSubject(userDetails.getUsername())
+                .withClaim("Refresh token only", true)
                 .withIssuer(request.getRequestURI())
                 .withIssuedAt(Instant.now())
                 .sign(Algorithm.HMAC256(JWT_ALGORITHM_SECRET));
 
         response.addHeader("Access-Token", accessToken);
         response.addHeader("Refresh-Token", refreshToken);
+    }
+
+    @Override
+    protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response, AuthenticationException failed) throws IOException, ServletException {
+        AuthenticationExceptionDetails authenticationExceptionDetails = AuthenticationExceptionDetails.builder()
+                .message("Invalid username or password")
+                .exception(failed.getClass().getSimpleName())
+                .timestamp(LocalDateTime.now())
+                .statusCode(401)
+                .build();
+
+        String exceptionDetailsAsJson = objectMapper.writeValueAsString(authenticationExceptionDetails);
+
+        response.setStatus(authenticationExceptionDetails.getStatusCode());
+        response.getWriter().print(exceptionDetailsAsJson);
     }
 }
