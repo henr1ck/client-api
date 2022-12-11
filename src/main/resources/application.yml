@@ -16,3 +16,8 @@ spring:
 logging:
   level:
     org.hibernate.SQL: DEBUG
+
+server:
+  error:
+    include-stacktrace: never
+    include-binding-errors: never

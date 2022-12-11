@@ -1,8 +1,8 @@
 package br.edu.ifpi.client.security.filter;
 
-import br.edu.ifpi.client.exception.InvalidHeaderException;
-import br.edu.ifpi.client.exception.details.AuthenticationExceptionDetails;
-import br.edu.ifpi.client.exception.details.BadRequestExceptionDetails;
+import br.edu.ifpi.client.error.exception.InvalidHeaderException;
+import br.edu.ifpi.client.error.exception.details.AuthenticationExceptionDetails;
+import br.edu.ifpi.client.error.exception.details.InvalidHeaderExceptionDetails;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -54,15 +54,15 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
                 throw new InvalidHeaderException("Username header or Password header is invalid");
             }
         } catch (RuntimeException exception) {
-            BadRequestExceptionDetails badRequestExceptionDetails  = BadRequestExceptionDetails.builder()
+            InvalidHeaderExceptionDetails invalidHeaderExceptionDetails  = InvalidHeaderExceptionDetails.builder()
                     .exception(exception.getClass().getSimpleName())
                     .message(exception.getLocalizedMessage())
                     .timestamp(LocalDateTime.now())
                     .statusCode(400)
                     .build();
 
-            String exceptionDetailsAsJson = objectMapper.writeValueAsString(badRequestExceptionDetails);
-            response.setStatus(badRequestExceptionDetails.getStatusCode());
+            String exceptionDetailsAsJson = objectMapper.writeValueAsString(invalidHeaderExceptionDetails);
+            response.setStatus(invalidHeaderExceptionDetails.getStatusCode());
             response.getWriter().print(exceptionDetailsAsJson);
 
             return null;

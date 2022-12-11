@@ -1,6 +1,7 @@
 package br.edu.ifpi.client.service.impl;
 
 import br.edu.ifpi.client.domain.Client;
+import br.edu.ifpi.client.error.exception.ClientNotFoundException;
 import br.edu.ifpi.client.repository.ClientRepository;
 import br.edu.ifpi.client.service.ClientService;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -35,7 +37,7 @@ public class ClientServiceImpl implements ClientService {
     @Override
     public Client findById(Long id) {
         Client clientFound = clientRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new ClientNotFoundException("Client not found!"));
 
         log.info("Getting the client: {}", clientFound);
         return clientFound;

@@ -1,7 +1,7 @@
 package br.edu.ifpi.client.controller;
 
-import br.edu.ifpi.client.exception.InvalidHeaderException;
-import br.edu.ifpi.client.exception.details.BadRequestExceptionDetails;
+import br.edu.ifpi.client.error.exception.InvalidHeaderException;
+import br.edu.ifpi.client.error.exception.details.BadRequestExceptionDetails;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
