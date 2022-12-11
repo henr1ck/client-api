@@ -38,10 +38,13 @@ public class UserController {
     @PostMapping(path = "/refresh-token")
     public ResponseEntity<Object> refreshtoken(HttpServletRequest request){
         try {
-            String token = request.getHeader("Refresh-Token");
-            if (token == null){
-                throw new InvalidHeaderException("Refresh-Token header is invalid");
+            String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+            if (authorizationHeader == null || !authorizationHeader.contains("Bearer ")) {
+                throw new InvalidHeaderException("Failed to extract Authorization Bearer header! " +
+                        "Expected format: [Authorization: Bearer <token>]");
             }
+            String token = authorizationHeader.substring("Bearer".length()).trim();
+
             JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(JWT_ALGORITHM_SECRET))
                     .withClaim("Refresh token only", true)
                     .build();

@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -42,37 +43,40 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-            String accessToken = request.getHeader("Access-Token");
-            try {
-                if(accessToken == null){
-                    throw new InvalidHeaderException("Access-Token header not found!");
-                }
-                JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(JWT_ALGORITHM_SECRET))
-                        .withClaim("Access token only", true).build();
-
-                DecodedJWT decodedJWT = jwtVerifier.verify(accessToken);
-                String subject = decodedJWT.getSubject();
-                List<SimpleGrantedAuthority> simpleGrantedAuthorities = decodedJWT.getClaim("authorities").asList(SimpleGrantedAuthority.class);
-
-                UsernamePasswordAuthenticationToken authenticationToken =
-                        new UsernamePasswordAuthenticationToken(subject, null, simpleGrantedAuthorities);
-
-                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-                filterChain.doFilter(request, response);
-
-            }catch (RuntimeException exception){
-                BadRequestExceptionDetails badRequestExceptionDetails = BadRequestExceptionDetails.builder()
-                        .exception(exception.getClass().getSimpleName())
-                        .message(exception.getLocalizedMessage())
-                        .timestamp(LocalDateTime.now())
-                        .statusCode(400)
-                        .build();
-
-                String exceptionDetailsAsJson = objectMapper.writeValueAsString(badRequestExceptionDetails);
-
-                response.setStatus(badRequestExceptionDetails.getStatusCode());
-                response.getWriter().print(exceptionDetailsAsJson);
+        try {
+            String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+            if (authorizationHeader == null || !authorizationHeader.contains("Bearer ")) {
+                throw new InvalidHeaderException("Failed to extract Authorization Bearer header! " +
+                        "Expected format: [Authorization: Bearer <token>]");
             }
+            String token = authorizationHeader.substring("Bearer".length()).trim();
+
+            JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(JWT_ALGORITHM_SECRET))
+                    .withClaim("Access token only", true).build();
+
+            DecodedJWT decodedJWT = jwtVerifier.verify(token);
+            String subject = decodedJWT.getSubject();
+            List<SimpleGrantedAuthority> simpleGrantedAuthorities = decodedJWT.getClaim("authorities").asList(SimpleGrantedAuthority.class);
+
+            UsernamePasswordAuthenticationToken authenticationToken =
+                    new UsernamePasswordAuthenticationToken(subject, null, simpleGrantedAuthorities);
+
+            SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+            filterChain.doFilter(request, response);
+
+        } catch (RuntimeException exception) {
+            BadRequestExceptionDetails badRequestExceptionDetails = BadRequestExceptionDetails.builder()
+                    .exception(exception.getClass().getSimpleName())
+                    .message(exception.getLocalizedMessage())
+                    .timestamp(LocalDateTime.now())
+                    .statusCode(400)
+                    .build();
+
+            String exceptionDetailsAsJson = objectMapper.writeValueAsString(badRequestExceptionDetails);
+
+            response.setStatus(badRequestExceptionDetails.getStatusCode());
+            response.getWriter().print(exceptionDetailsAsJson);
+        }
     }
 
 }
