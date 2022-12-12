@@ -1,4 +1,4 @@
-version: '3.1'
+version: '3.9'
 services:
   db:
     image: 'mysql'
@@ -7,3 +7,37 @@ services:
       - 'MYSQL_ROOT_PASSWORD=RbzQg1NWrD'
     ports:
       - '3306:3306'
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512MB
+        reservations:
+          cpus: '0.2'
+          memory: 128M
+    volumes:
+      - client_db_vol:/var/lib/mysql
+
+  app:
+    image: 'henr1ck/client-app'
+    container_name: 'client-app'
+    ports:
+      - '8080:8080'
+    depends_on:
+      - db
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+        delay: 5s
+        window: 40s
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.2'
+          memory: 128M
+
+volumes:
+  client_db_vol:
