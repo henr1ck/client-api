@@ -4,7 +4,7 @@ jwt:
 
 spring:
   datasource:
-    url: jdbc:mysql://db:3306/client?createDatabaseIfNotExist=true
+    url: jdbc:mysql://localhost:3306/client?createDatabaseIfNotExist=true
     username: root
     password: RbzQg1NWrD
 
@@ -12,6 +12,11 @@ spring:
     database: mysql
     hibernate:
       ddl-auto: create-drop
+
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+      fail-on-ignored-properties: true
 
 logging:
   level:
@@ -21,3 +26,4 @@ server:
   error:
     include-stacktrace: never
     include-binding-errors: never
+

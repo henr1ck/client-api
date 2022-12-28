@@ -37,7 +37,7 @@ public class ClientServiceImpl implements ClientService {
     @Override
     public Client findById(Long id) {
         Client clientFound = clientRepository.findById(id)
-                .orElseThrow(() -> new ClientNotFoundException("Client not found!"));
+                .orElseThrow(() -> new ClientNotFoundException(String.format("Client ID %d not found!", id)));
 
         log.info("Getting the client: {}", clientFound);
         return clientFound;

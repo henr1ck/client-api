@@ -1,8 +1,7 @@
 package br.edu.ifpi.client.security.filter;
 
 import br.edu.ifpi.client.error.exception.InvalidHeaderException;
-import br.edu.ifpi.client.error.exception.details.AuthenticationExceptionDetails;
-import br.edu.ifpi.client.error.exception.details.InvalidHeaderExceptionDetails;
+import br.edu.ifpi.client.error.exception.details.ProblemDetails;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -51,19 +50,19 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         String password = request.getHeader("password");
         try {
             if (username == null || password == null){
-                throw new InvalidHeaderException("Username header or Password header is invalid");
+                throw new InvalidHeaderException("Username header or Password header is invalid for sign-in");
             }
         } catch (RuntimeException exception) {
-            InvalidHeaderExceptionDetails invalidHeaderExceptionDetails  = InvalidHeaderExceptionDetails.builder()
-                    .exception(exception.getClass().getSimpleName())
-                    .message(exception.getLocalizedMessage())
+            ProblemDetails problemDetails = ProblemDetails.builder()
+                    .status(400)
+                    .title("Header validation")
+                    .detail(exception.getLocalizedMessage())
                     .timestamp(LocalDateTime.now())
-                    .statusCode(400)
                     .build();
 
-            String exceptionDetailsAsJson = objectMapper.writeValueAsString(invalidHeaderExceptionDetails);
-            response.setStatus(invalidHeaderExceptionDetails.getStatusCode());
-            response.getWriter().print(exceptionDetailsAsJson);
+            String problemDetailsAsJson = objectMapper.writeValueAsString(problemDetails);
+            response.setStatus(problemDetails.getStatus());
+            response.getWriter().print(problemDetailsAsJson);
 
             return null;
         }
@@ -101,16 +100,15 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 
     @Override
     protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response, AuthenticationException failed) throws IOException, ServletException {
-        AuthenticationExceptionDetails authenticationExceptionDetails = AuthenticationExceptionDetails.builder()
-                .message("Invalid username or password")
-                .exception(failed.getClass().getSimpleName())
+        ProblemDetails problemDetails = ProblemDetails.builder()
+                .status(401)
+                .title("Authentication failed")
+                .detail(failed.getLocalizedMessage())
                 .timestamp(LocalDateTime.now())
-                .statusCode(401)
                 .build();
 
-        String exceptionDetailsAsJson = objectMapper.writeValueAsString(authenticationExceptionDetails);
-
-        response.setStatus(authenticationExceptionDetails.getStatusCode());
-        response.getWriter().print(exceptionDetailsAsJson);
+        String problemDetailsAsJson = objectMapper.writeValueAsString(problemDetails);
+        response.setStatus(problemDetails.getStatus());
+        response.getWriter().print(problemDetailsAsJson);
     }
 }

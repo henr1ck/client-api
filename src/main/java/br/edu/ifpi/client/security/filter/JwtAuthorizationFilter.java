@@ -1,7 +1,7 @@
 package br.edu.ifpi.client.security.filter;
 
 import br.edu.ifpi.client.error.exception.InvalidHeaderException;
-import br.edu.ifpi.client.error.exception.details.BadRequestExceptionDetails;
+import br.edu.ifpi.client.error.exception.details.ProblemDetails;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
@@ -65,17 +65,16 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
 
         } catch (RuntimeException exception) {
-            BadRequestExceptionDetails badRequestExceptionDetails = BadRequestExceptionDetails.builder()
-                    .exception(exception.getClass().getSimpleName())
-                    .message(exception.getLocalizedMessage())
+            ProblemDetails problemDetails = ProblemDetails.builder()
+                    .status(400)
+                    .title("Header validation")
+                    .detail(exception.getLocalizedMessage())
                     .timestamp(LocalDateTime.now())
-                    .statusCode(400)
                     .build();
 
-            String exceptionDetailsAsJson = objectMapper.writeValueAsString(badRequestExceptionDetails);
-
-            response.setStatus(badRequestExceptionDetails.getStatusCode());
-            response.getWriter().print(exceptionDetailsAsJson);
+            String problemDetailsAsJson = objectMapper.writeValueAsString(problemDetails);
+            response.setStatus(problemDetails.getStatus());
+            response.getWriter().print(problemDetailsAsJson);
         }
     }
 

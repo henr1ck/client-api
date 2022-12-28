@@ -1,7 +1,7 @@
 package br.edu.ifpi.client.controller;
 
 import br.edu.ifpi.client.error.exception.InvalidHeaderException;
-import br.edu.ifpi.client.error.exception.details.BadRequestExceptionDetails;
+import br.edu.ifpi.client.error.exception.details.ProblemDetails;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
@@ -77,14 +77,14 @@ public class UserController {
 
             return ResponseEntity.status(HttpStatus.CREATED).headers(headers).build();
         } catch (RuntimeException exception) {
-            BadRequestExceptionDetails badRequestExceptionDetails = BadRequestExceptionDetails.builder()
-                    .exception(exception.getClass().getSimpleName())
-                    .message(exception.getLocalizedMessage())
+            ProblemDetails problemDetails = ProblemDetails.builder()
+                    .status(400)
+                    .title("Header validation")
+                    .detail(exception.getLocalizedMessage())
                     .timestamp(LocalDateTime.now())
-                    .statusCode(400)
                     .build();
 
-            return ResponseEntity.status(badRequestExceptionDetails.getStatusCode()).body(badRequestExceptionDetails);
+            return ResponseEntity.status(problemDetails.getStatus()).body(problemDetails);
         }
     }
 }
